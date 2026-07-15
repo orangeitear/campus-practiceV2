@@ -1,0 +1,66 @@
+# ================================
+# 校园问答助手 .gitignore
+# ================================
+
+# ---- Java / Spring Boot 后端 ----
+target/
+*.class
+*.jar
+*.war
+*.log
+build/
+.mvn/wrapper/maven-wrapper.jar
+
+# ---- IDE ----
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+
+# ---- Node.js / 前端 ----
+node_modules/
+dist/
+.npm
+.yarn/
+*.local
+
+# ---- 环境配置（含密码密钥，绝对不能提交！）----
+.env
+.env.*
+application-local.yml
+application-local.properties
+
+# ---- 数据库 ----
+*.db
+*.sqlite
+*.sql.bak
+
+# ---- FAISS 向量库（体积大，不提交）----
+vector_store/
+faiss_index/
+llama_index_storage/
+
+# ---- 上传文件目录 ----
+uploads/
+uploads/*
+
+# ---- 日志 ----
+logs/
+*.log
+
+# ---- 操作系统 ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 其他 ----
+.cache/
+coverage/
+*.pid
+*.seed
