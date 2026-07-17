@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,6 +28,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const {
@@ -54,11 +55,17 @@ export function LoginPage() {
       }) as { token: string; user: any };
       login(res.token, res.user);
       message.success("登录成功");
+      // 记住用户名
       if (data.remember) {
         localStorage.setItem("campus-qa-remember-username", data.username);
       } else {
         localStorage.removeItem("campus-qa-remember-username");
       }
+      // 延迟跳转，确保 React Context 状态已更新
+      setTimeout(() => {
+        const target = res.user.role === "admin" ? "/admin" : "/";
+        navigate(target, { replace: true });
+      }, 100);
     } catch (err: unknown) {
       message.error(err instanceof Error ? err.message : "登录失败");
     } finally {

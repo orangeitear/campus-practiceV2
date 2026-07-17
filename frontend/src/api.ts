@@ -1,10 +1,10 @@
 const getApiBase = () =>
-  (typeof window !== "undefined" && window.__HHU_CHAT_API_BASE__) || "";
+  (typeof window !== "undefined" && window.__HHU_CHAT_API_BASE__) || "/api";
 
 export interface ApiUser {
   id: number;
-  name: string;
-  email: string;
+  username: string;
+  email: string | null;
   role: string;
   is_active: boolean;
   created_at: string;
@@ -52,15 +52,7 @@ async function fetchApi<T>(
   options?: RequestInit & { token?: string },
 ): Promise<T> {
   const base = getApiBase().replace(/\/$/, "");
-   // 👇 添加这三行调试
-  console.log('=== fetchApi 调试 ===');
-  console.log('1. base =', base);
-  console.log('2. path =', path);
-  
   const url = `${base}${path}`;
-  console.log('3. final url =', url);
-  console.log('==================');
-  // const url = `${base}${path}`;
   const isFormData = options?.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(!isFormData ? { "Content-Type": "application/json" } : {}),
@@ -195,33 +187,40 @@ export const api = {
   },
 
   users: {
-  // 获取所有用户列表 - 根据API文档: GET /api/user/users
-  getAll: (token: string) => fetchApi<ApiUser[]>("/api/user/users", { token }),
+  // 获取所有用户列表 - GET /api/user/users
+  getAll: (token: string) => fetchApi<ApiUser[]>("/user/users", { token }),
+
+  // 分页获取用户列表 - GET /api/user/list?page=1&size=10&keyword=
+  list: (token: string, page = 1, size = 10, keyword = "") =>
+    fetchApi<{ total: number; page: number; size: number; list: ApiUser[] }>(
+      `/user/list?page=${page}&size=${size}&keyword=${encodeURIComponent(keyword)}`,
+      { token },
+    ),
   
   // 创建用户 - 根据API文档: POST /api/user/register
   create: (token: string, data: { username: string; email: string; password: string }) =>
-    fetchApi<ApiUser>("/api/user/register", {
+    fetchApi<ApiUser>("/user/register", {
       method: "POST",
       token,
       body: JSON.stringify(data),
     }),
   
-  // 更新用户状态 - 根据API文档: PUT /api/user/{user_id}/status
+  // 更新用户状态 - PUT /api/user/{user_id}/status
   update: (token: string, id: number, data: { is_active?: boolean; role?: string }) =>
-    fetchApi<ApiUser>(`/api/user/${id}/status`, {
+    fetchApi<ApiUser>(`/user/${id}/status`, {
       method: "PUT",  // 注意是 PUT 不是 PATCH
       token,
       body: JSON.stringify({ is_active: data.is_active }),
     }),
   delete: (token: string, id: number) =>
-    fetchApi<null>(`/api/user/${id}`, {
+    fetchApi<null>(`/user/${id}`, {
       method: "DELETE",
       token,
     }),
   
-  // 更新角色 - 根据API文档: PATCH /api/user/{user_id}/role
+  // 更新角色 - PATCH /api/user/{user_id}/role
   updateRole: (token: string, id: number, role: string) =>
-    fetchApi<ApiUser>(`/api/user/${id}/role`, {
+    fetchApi<ApiUser>(`/user/${id}/role`, {
       method: "PATCH",
       token,
       body: JSON.stringify({ role }),

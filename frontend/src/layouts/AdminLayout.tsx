@@ -68,7 +68,7 @@ export function AdminLayout() {
             知识服务运行中
           </span>
           <div className="user-meta">
-            <strong>{user?.name}</strong>
+            <strong>{user?.username}</strong>
             <span>{isAdmin() ? "系统管理员" : "校园用户"}</span>
           </div>
           <button className="logout-btn" onClick={handleLogout}>

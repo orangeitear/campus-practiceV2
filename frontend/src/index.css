@@ -1323,28 +1323,90 @@ a {
   margin-left: auto;
   opacity: 0.65;
 }
-.chat-input {
-  display: flex;
-  gap: 10px;
-  padding: 16px 20px;
-  background: #faf9f5;
+/* --- Chat input area (textarea) --- */
+.chat-input-area {
   border-top: 1px solid var(--line);
+  background: #faf9f5;
+  padding: 12px 16px;
 }
-.chat-input input {
-  flex: 1;
-  padding: 11px 13px;
+.chat-input-area textarea.chat-input {
+  width: 100%;
+  padding: 10px 12px;
   border: 1px solid var(--line);
+  border-radius: 5px;
   outline: 0;
+  resize: none;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  background: white;
 }
-.chat-input input:focus {
+.chat-input-area textarea.chat-input:focus {
   border-color: var(--river);
 }
-.chat-input > button {
-  width: 44px;
-  display: grid;
-  place-items: center;
+.chat-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.btn-send,
+.btn-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-send {
   color: white;
   background: var(--river);
+}
+.btn-send:hover:not(:disabled) { background: var(--river-deep); }
+.btn-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-stop {
+  color: var(--river);
+  background: white;
+  border: 1px solid var(--river);
+}
+.btn-stop:hover {
+  background: #f0f4f8;
+}
+/* conv pagination */
+.conv-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0;
+  font-size: 12px;
+  color: #999;
+}
+.conv-pagination button {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+.conv-pagination button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.conv-pagination button:hover:not(:disabled) {
+  border-color: var(--river);
+  color: var(--river);
 }
 
 /* Embedded widget */
