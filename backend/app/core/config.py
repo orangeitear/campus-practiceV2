@@ -31,7 +31,9 @@ class Settings(BaseSettings):
     FRONTEND_ORIGIN: Optional[str] = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
     FRONTEND_ORIGINS: Optional[str] = os.getenv("FRONTEND_ORIGINS", None)
     DASHSCOPE_BASE_URL: Optional[str] = os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com")
-    EMBEDDING_MODEL: Optional[str] = os.getenv("EMBEDDING_MODEL", "text-embedding-v3")
+    EMBEDDING_BASE_URL: str = "https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding"
+    EMBEDDING_MODEL: Optional[str] = os.getenv("EMBEDDING_MODEL", "text-embedding-v4")
+    EMBEDDING_DIM: int = os.getenv("EMBEDDING_DIM", "1024")
     LLM_MODEL: Optional[str] = os.getenv("LLM_MODEL", "qwen-turbo")
     LLM_BASE_URL: Optional[str] = os.getenv("LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
     TOP_K: Optional[int] = int(os.getenv("TOP_K", "5"))

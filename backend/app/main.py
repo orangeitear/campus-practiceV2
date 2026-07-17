@@ -11,10 +11,11 @@ from app.core.exception_handler import (
 )
 from app.core.exceptions import BizException
 from app.schemas.common import success
-from app.routers import user  # 新增
+from app.routers import user  
+from app.routers import user, document
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-
+from app.routers import user, document, chat, qa_record
 app = FastAPI(
     title="Campus QA Backend",
     description="校园问答助手后端 API",
@@ -26,6 +27,9 @@ Base.metadata.create_all(bind=engine)
 
 # 注册路由
 app.include_router(user.router)
+app.include_router(document.router)
+app.include_router(chat.router)
+app.include_router(qa_record.router)
 
 # 配置 CORS 跨域
 app.add_middleware(

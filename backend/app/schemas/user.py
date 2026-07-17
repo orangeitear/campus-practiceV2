@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -16,13 +17,13 @@ class LoginDTO(BaseModel):
 
 
 class UserResponse(BaseModel):
-    """用户信息响应模型"""
+    """用户信息响应模型（不包含密码）"""
     id: int
     username: str
     email: Optional[str] = None
     role: str = "user"
     is_active: bool = True
-    created_at: str
+    created_at: datetime  # ✅ 改为 datetime 类型
 
     class Config:
         from_attributes = True
