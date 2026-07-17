@@ -1,21 +1,26 @@
 from datetime import datetime, timedelta
 from typing import Optional
-
+from app.core.config import settings
 import jwt
 from passlib.context import CryptContext
 
-from app.core.config import settings
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# 修改这一行
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 
 def get_password_hash(password: str) -> str:
     """密码加密"""
+    # bcrypt 限制 72 字节，先截断
+    if isinstance(password, str):
+        password = password[:72]
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """密码验证"""
+    # bcrypt 限制 72 字节，先截断
+    if isinstance(plain_password, str):
+        plain_password = plain_password[:72]
     return pwd_context.verify(plain_password, hashed_password)
 
 

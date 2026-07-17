@@ -24,7 +24,7 @@ def create_user(db: Session, data: RegisterDTO) -> User:
     hashed_password = get_password_hash(data.password)
     user = User(
         username=data.username,
-        password=hashed_password,
+        password_hash=hashed_password,
         email=data.email,
         role="user",  # 默认普通用户
         is_active=True
@@ -40,7 +40,7 @@ def authenticate_user(db: Session, username: str, password: str) -> User:
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise BizException(code=401, message="用户名或密码错误")
-    if not verify_password(password, user.password):
+    if not verify_password(password, user.password_hash):
         raise BizException(code=401, message="用户名或密码错误")
     if not user.is_active:
         raise BizException(code=403, message="账号已被禁用")
@@ -87,3 +87,23 @@ def update_user_status(db: Session, user_id: int, is_active: bool) -> User:
     db.commit()
     db.refresh(user)
     return user
+
+def get_or_create_guest(db: Session) -> User:
+    """获取或创建游客用户"""
+    # 查找是否存在游客账号（使用特定用户名，比如 'guest'）
+    guest = db.query(User).filter(User.username == "guest").first()
+    
+    if not guest:
+        # 创建游客账号
+        guest = User(
+            username="guest",
+            password_hash="",  # 游客不需要密码
+            email=None,
+            role="guest",  # 如果 User 模型有 role 字段
+            is_active=True
+        )
+        db.add(guest)
+        db.commit()
+        db.refresh(guest)
+    
+    return guest

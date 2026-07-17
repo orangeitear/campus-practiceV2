@@ -11,7 +11,7 @@ import {
   Pagination,
 } from "antd";
 import { useAuth } from "../context/auth-context";
-import request from "../services/request";
+import request from "../services/request";  // 只保留 request
 import {
   Users,
   Shield,
@@ -26,9 +26,11 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
+// 删除 import { api, ApiUser } from '../api';
+
 interface UserItem {
   id: number;
-  name: string;
+  username: string;
   email: string;
   role: string;
   is_active: boolean;
@@ -53,11 +55,12 @@ export function UsersPage() {
   const [editForm] = Form.useForm();
   const [addForm] = Form.useForm();
 
+  // ✅ 统一使用 request，路径不加 /api（request 会自动加）
   const loadUsers = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
-      const data = await request.get("/users") as UserItem[];
+      const data = await request.get("/user/users") as UserItem[];
       setUsers(data);
     } catch (err: unknown) {
       message.error(err instanceof Error ? err.message : "加载用户失败");
@@ -71,7 +74,7 @@ export function UsersPage() {
   }, [loadUsers]);
 
   const filteredUsers = users.filter((user) =>
-    `${user.name} ${user.email} ${user.role}`.toLowerCase().includes(query.toLowerCase()),
+    `${user.username} ${user.email} ${user.role}`.toLowerCase().includes(query.toLowerCase()),
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
@@ -83,11 +86,12 @@ export function UsersPage() {
   const adminCount = users.filter((user) => user.role === "ADMIN").length;
   const activeCount = users.filter((user) => user.is_active).length;
 
+  // ✅ 统一使用 request
   const toggleRole = async (user: UserItem) => {
     if (!token) return;
-    const newRole = user.role === "ADMIN" ? "STUDENT" : "ADMIN";
+    const newRole = user.role === "ADMIN" ? "USER" : "ADMIN";
     try {
-      await request.patch(`/users/${user.id}`, { role: newRole });
+      await request.patch(`/user/${user.id}/role`, { role: newRole });
       message.success("角色已更新");
       await loadUsers();
     } catch (err: unknown) {
@@ -95,10 +99,11 @@ export function UsersPage() {
     }
   };
 
+  // ✅ 统一使用 request
   const toggleActive = async (user: UserItem) => {
     if (!token) return;
     try {
-      await request.patch(`/users/${user.id}`, { is_active: !user.is_active });
+      await request.put(`/user/${user.id}/status`, { is_active: !user.is_active });
       message.success(user.is_active ? "已停用" : "已启用");
       await loadUsers();
     } catch (err: unknown) {
@@ -106,12 +111,14 @@ export function UsersPage() {
     }
   };
 
+
+  // ✅ 统一使用 request
   const handleDelete = async () => {
     if (!token || !deleteUser) return;
     setModalLoading(true);
     try {
-      await request.patch(`/users/${deleteUser.id}`, { is_active: false });
-      message.success("用户已停用");
+      await request.delete(`/user/${deleteUser.id}`);
+      message.success("用户已删除");
       await loadUsers();
       setDeleteModal(false);
     } catch (err: unknown) {
@@ -121,11 +128,12 @@ export function UsersPage() {
     }
   };
 
+  // ✅ 统一使用 request
   const handleEdit = async (values: { role: string; email: string }) => {
     if (!token || !editUser) return;
     setModalLoading(true);
     try {
-      await request.patch(`/users/${editUser.id}`, { role: values.role });
+      await request.patch(`/user/${editUser.id}/role`, { role: values.role });
       message.success("更新成功");
       await loadUsers();
       setEditModal(false);
@@ -136,15 +144,16 @@ export function UsersPage() {
     }
   };
 
+  // ✅ 统一使用 request
   const handleAdd = async (values: {
-    name: string;
+    username: string;
     email: string;
     password: string;
   }) => {
     if (!token) return;
     setModalLoading(true);
     try {
-      await request.post("/auth/register", values);
+      await request.post("/user/register", values);
       message.success("用户已创建");
       await loadUsers();
       setAddModal(false);
@@ -156,6 +165,7 @@ export function UsersPage() {
     }
   };
 
+  // 表格列配置保持不变
   const columns = [
     {
       title: "ID",
@@ -163,8 +173,8 @@ export function UsersPage() {
       width: 60,
     },
     {
-      title: "姓名",
-      dataIndex: "name",
+      title: "用户名",
+      dataIndex: "username",
     },
     {
       title: "邮箱",
@@ -182,7 +192,7 @@ export function UsersPage() {
         ) : (
           <Tag>
             <Users size={12} style={{ marginRight: 4 }} />
-            学生
+            普通用户
           </Tag>
         ),
     },
@@ -212,7 +222,7 @@ export function UsersPage() {
       title: "操作",
       key: "actions",
       render: (_: unknown, record: UserItem) => (
-        <div className="actions">
+        <div className="actions" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
           <Button
             size="small"
             icon={<Pencil size={12} />}
@@ -225,7 +235,7 @@ export function UsersPage() {
             编辑
           </Button>
           <Button size="small" onClick={() => toggleRole(record)}>
-            {record.role === "ADMIN" ? "设为学生" : "设为管理员"}
+            {record.role === "ADMIN" ? "设为普通用户" : "设为管理员"}
           </Button>
           <Button size="small" onClick={() => toggleActive(record)}>
             {record.is_active ? "停用" : "启用"}
@@ -340,8 +350,8 @@ export function UsersPage() {
         footer={null}
       >
         <Form form={editForm} layout="vertical" onFinish={handleEdit}>
-          <Form.Item label="姓名">
-            <Input value={editUser?.name} disabled />
+          <Form.Item label="用户名">
+            <Input value={editUser?.username} disabled />
           </Form.Item>
           <Form.Item label="邮箱">
             <Input value={editUser?.email} disabled />
@@ -349,7 +359,7 @@ export function UsersPage() {
           <Form.Item name="role" label="角色" rules={[{ required: true }]}>
             <Select>
               <Select.Option value="ADMIN">管理员</Select.Option>
-              <Select.Option value="STUDENT">学生</Select.Option>
+              <Select.Option value="USER">普通用户</Select.Option>
             </Select>
           </Form.Item>
           <Form.Item>
@@ -377,11 +387,11 @@ export function UsersPage() {
       >
         <Form form={addForm} layout="vertical" onFinish={handleAdd}>
           <Form.Item
-            name="name"
-            label="姓名"
-            rules={[{ required: true, message: "请输入姓名" }, { min: 2, message: "至少2个字符" }]}
+            name="username"
+            label="用户名"
+            rules={[{ required: true, message: "请输入用户名" }, { min: 2, message: "至少2个字符" }]}
           >
-            <Input placeholder="请输入姓名" />
+            <Input placeholder="请输入用户名" />
           </Form.Item>
           <Form.Item
             name="email"
@@ -415,7 +425,7 @@ export function UsersPage() {
       </Modal>
 
       {/* Delete Modal */}
-      <Modal
+            <Modal
         title={
           <span>
             <AlertTriangle size={16} style={{ marginRight: 8 }} />
@@ -425,9 +435,7 @@ export function UsersPage() {
         open={deleteModal}
         onCancel={() => setDeleteModal(false)}
         footer={[
-          <Button key="cancel" onClick={() => setDeleteModal(false)}>
-            取消
-          </Button>,
+          <Button key="cancel" onClick={() => setDeleteModal(false)}>取消</Button>,
           <Button
             key="delete"
             danger
@@ -440,9 +448,9 @@ export function UsersPage() {
         ]}
       >
         <p>
-          即将停用用户 <strong>{deleteUser?.name}</strong>（{deleteUser?.email}）
+          即将<strong style={{ color: 'red' }}>永久删除</strong>用户 <strong>{deleteUser?.username}</strong>（{deleteUser?.email}）
           <br />
-          此操作不可撤销。
+          此操作不可撤销，该用户的所有数据将被清除。
         </p>
       </Modal>
     </div>

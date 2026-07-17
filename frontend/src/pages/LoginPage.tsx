@@ -14,12 +14,12 @@ import {
   ShieldCheck,
   Library,
   Quote,
-  Mail,
-  Lock,
+  User,      // 添加 User
+  Lock,       // 保留 Lock
 } from "lucide-react";
 
 const loginSchema = z.object({
-  email: z.string().min(1, "邮箱不能为空").email("请输入有效的邮箱地址"),
+  username: z.string().min(1, "用户名不能为空"),
   password: z.string().min(1, "密码不能为空"),
   remember: z.boolean().optional(),
 });
@@ -48,16 +48,16 @@ export function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
     try {
-      const res = await request.post("/auth/login", {
-        email: data.email,
+      const res = await request.post("/user/login", {
+        username: data.username,  // email → username
         password: data.password,
       }) as { token: string; user: any };
       login(res.token, res.user);
       message.success("登录成功");
       if (data.remember) {
-        localStorage.setItem("campus-qa-remember-email", data.email);
+        localStorage.setItem("campus-qa-remember-username", data.username);
       } else {
-        localStorage.removeItem("campus-qa-remember-email");
+        localStorage.removeItem("campus-qa-remember-username");
       }
     } catch (err: unknown) {
       message.error(err instanceof Error ? err.message : "登录失败");
@@ -116,15 +116,15 @@ export function LoginPage() {
           </div>
           <Form onFinish={handleSubmit(onSubmit)} layout="vertical" style={{ marginTop: 24 }}>
             <Form.Item
-              label="邮箱"
-              validateStatus={errors.email ? "error" : ""}
-              help={errors.email?.message}
+              label="用户名"
+              validateStatus={errors.username ? "error" : ""}
+              help={errors.username?.message}
             >
               <Input
-                prefix={<Mail size={16} />}
-                placeholder="请输入邮箱"
-                {...register("email")}
-                onChange={(e) => setValue("email", e.target.value, { shouldValidate: true })}
+                prefix={<User size={16} />}
+                placeholder="请输入用户名"
+                {...register("username")}
+                onChange={(e) => setValue("username", e.target.value, { shouldValidate: true })}
               />
             </Form.Item>
             <Form.Item

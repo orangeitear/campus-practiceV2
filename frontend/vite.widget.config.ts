@@ -5,6 +5,15 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {                           // ← 添加这部分
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      }
+    }
+  },
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
   },

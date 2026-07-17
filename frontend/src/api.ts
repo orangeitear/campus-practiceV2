@@ -1,5 +1,5 @@
 const getApiBase = () =>
-  (typeof window !== "undefined" && window.__HHU_CHAT_API_BASE__) || "/api";
+  (typeof window !== "undefined" && window.__HHU_CHAT_API_BASE__) || "";
 
 export interface ApiUser {
   id: number;
@@ -52,7 +52,15 @@ async function fetchApi<T>(
   options?: RequestInit & { token?: string },
 ): Promise<T> {
   const base = getApiBase().replace(/\/$/, "");
+   // 👇 添加这三行调试
+  console.log('=== fetchApi 调试 ===');
+  console.log('1. base =', base);
+  console.log('2. path =', path);
+  
   const url = `${base}${path}`;
+  console.log('3. final url =', url);
+  console.log('==================');
+  // const url = `${base}${path}`;
   const isFormData = options?.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(!isFormData ? { "Content-Type": "application/json" } : {}),
@@ -101,25 +109,25 @@ async function fetchApi<T>(
 export const api = {
   health: () => fetchApi("/health"),
 
-  login: (email: string, password: string) =>
-    fetchApi<AuthResponse>("/auth/login", {
+  login: (username: string, password: string) =>
+    fetchApi<AuthResponse>("/user/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, password }),
     }),
 
   guestLogin: () =>
-    fetchApi<AuthResponse>("/auth/guest", {
+    fetchApi<AuthResponse>("/user/guest", {
       method: "POST",
       body: JSON.stringify({}),
     }),
 
-  register: (name: string, email: string, password: string) =>
-    fetchApi<AuthResponse>("/auth/register", {
+  register: (username: string, email: string, password: string) =>
+    fetchApi<AuthResponse>("/user/register", {
       method: "POST",
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ username, email, password }),
     }),
 
-  me: (token: string) => fetchApi<ApiUser>("/auth/me", { token }),
+  me: (token: string) => fetchApi<ApiUser>("/user/me", { token }),
 
   stats: (token: string) =>
     fetchApi<{ documents: number; chunks: number; conversations: number }>(
@@ -187,12 +195,36 @@ export const api = {
   },
 
   users: {
-    list: (token: string) => fetchApi<ApiUser[]>("/users", { token }),
-    update: (token: string, id: number, role?: string, isActive?: boolean) =>
-      fetchApi<ApiUser>(`/users/${id}`, {
-        method: "PATCH",
-        token,
-        body: JSON.stringify({ role, is_active: isActive }),
-      }),
-  },
+  // 获取所有用户列表 - 根据API文档: GET /api/user/users
+  getAll: (token: string) => fetchApi<ApiUser[]>("/api/user/users", { token }),
+  
+  // 创建用户 - 根据API文档: POST /api/user/register
+  create: (token: string, data: { username: string; email: string; password: string }) =>
+    fetchApi<ApiUser>("/api/user/register", {
+      method: "POST",
+      token,
+      body: JSON.stringify(data),
+    }),
+  
+  // 更新用户状态 - 根据API文档: PUT /api/user/{user_id}/status
+  update: (token: string, id: number, data: { is_active?: boolean; role?: string }) =>
+    fetchApi<ApiUser>(`/api/user/${id}/status`, {
+      method: "PUT",  // 注意是 PUT 不是 PATCH
+      token,
+      body: JSON.stringify({ is_active: data.is_active }),
+    }),
+  delete: (token: string, id: number) =>
+    fetchApi<null>(`/api/user/${id}`, {
+      method: "DELETE",
+      token,
+    }),
+  
+  // 更新角色 - 根据API文档: PATCH /api/user/{user_id}/role
+  updateRole: (token: string, id: number, role: string) =>
+    fetchApi<ApiUser>(`/api/user/${id}/role`, {
+      method: "PATCH",
+      token,
+      body: JSON.stringify({ role }),
+    }),
+},
 };

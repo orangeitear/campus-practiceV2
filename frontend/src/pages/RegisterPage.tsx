@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,7 +18,7 @@ import {
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, "姓名至少2个字符").max(40, "姓名最多40个字符"),
+    username: z.string().min(2, "姓名至少2个字符").max(40, "姓名最多40个字符"),
     email: z.string().min(1, "邮箱不能为空").email("请输入有效的邮箱地址"),
     password: z.string().min(6, "密码至少6位").max(72, "密码最多72位"),
     confirmPassword: z.string().min(1, "请确认密码"),
@@ -32,6 +32,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 export function RegisterPage() {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const {
@@ -47,21 +48,28 @@ export function RegisterPage() {
   const password = watch("password");
 
   const onSubmit = async (data: RegisterFormData) => {
-    setLoading(true);
-    try {
-      const res = await request.post("/auth/register", {
-        name: data.name,
-        email: data.email,
-        password: data.password,
-      }) as { token: string; user: any };
-      login(res.token, res.user);
-      message.success("注册成功");
-    } catch (err: unknown) {
-      message.error(err instanceof Error ? err.message : "注册失败");
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    // 直接调用，不需要 res.data
+    await request.post("/user/register", {
+      username: data.username,
+      email: data.email,
+      password: data.password,
+    });
+    
+    // 注册成功
+    message.success("注册成功，请登录");
+    navigate("/login");
+    
+  } catch (err: unknown) {
+    // 注册失败（如用户名已存在）
+    const error = err as Error;
+    message.error(error.message || "注册失败");
+    console.error("注册失败:", error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Password strength indicator
   const getStrength = (pwd: string) => {
@@ -114,15 +122,15 @@ export function RegisterPage() {
           </div>
           <Form onFinish={handleSubmit(onSubmit)} layout="vertical" style={{ marginTop: 24 }}>
             <Form.Item
-              label="姓名"
-              validateStatus={errors.name ? "error" : ""}
-              help={errors.name?.message}
+              label="用户名"
+              validateStatus={errors.username ? "error" : ""}
+              help={errors.username?.message}
             >
               <Input
                 prefix={<User size={16} />}
-                placeholder="请输入姓名"
-                {...register("name")}
-                onChange={(e) => setValue("name", e.target.value, { shouldValidate: true })}
+                placeholder="请输入用户名"
+                {...register("username")}
+                onChange={(e) => setValue("username", e.target.value, { shouldValidate: true })}
               />
             </Form.Item>
             <Form.Item

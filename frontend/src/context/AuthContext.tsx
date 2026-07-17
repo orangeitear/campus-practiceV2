@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isAdmin = useCallback(() => {
-    return state.user?.role === "ADMIN";
+    return state.user?.role?.toLowerCase() === "admin";
   }, [state.user]);
 
   return (

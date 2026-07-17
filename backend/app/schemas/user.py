@@ -1,4 +1,5 @@
 from typing import Optional
+from datetime import datetime  # 添加这行导入
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -22,7 +23,10 @@ class UserResponse(BaseModel):
     email: Optional[str] = None
     role: str = "user"
     is_active: bool = True
-    created_at: str
+    created_at: datetime  # str → datetime
 
     class Config:
         from_attributes = True
+        json_encoders = {  # 添加这个配置，自动将 datetime 转为字符串
+            datetime: lambda v: v.isoformat()
+        }

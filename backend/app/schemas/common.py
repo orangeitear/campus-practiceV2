@@ -1,15 +1,14 @@
 from typing import Any, Optional
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Result(BaseModel):
     """统一响应模型"""
-    
     code: int = 200
     message: str = "success"
     data: Optional[Any] = None
-    timestamp: datetime = datetime.now()
+    timestamp: datetime = Field(default_factory=datetime.now)  # 使用 default_factory
 
 
 def success(data: Any = None, message: str = "success") -> dict:
