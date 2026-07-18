@@ -120,6 +120,20 @@ export function ChatPage() {
             } catch {
               // ignore
             }
+          } else if (event === "error") {
+            try {
+              const parsed = JSON.parse(data);
+              assistantContent = "请求出错: " + (parsed.message || "未知错误");
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId
+                    ? { ...m, content: assistantContent, sources }
+                    : m,
+                ),
+              );
+            } catch {
+              // ignore
+            }
           } else if (event === "done") {
             break;
           }

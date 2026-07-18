@@ -137,21 +137,21 @@ export const api = {
 
   documents: {
     list: (token: string) =>
-      fetchApi<DocumentRecord[]>("/documents", { token }),
+      fetchApi<{ list: DocumentRecord[]; total: number; page: number; size: number }>("/api/documents", { token }),
     upload: (token: string, title: string, file: File) => {
       const form = new FormData();
       form.append("title", title);
       form.append("file", file);
-      return fetchApi<DocumentRecord>("/documents", {
+      return fetchApi<DocumentRecord>("/api/documents", {
         method: "POST",
         token,
         body: form,
       });
     },
     delete: (token: string, id: number) =>
-      fetchApi<null>(`/documents/${id}`, { method: "DELETE", token }),
+      fetchApi<null>(`/api/documents/${id}`, { method: "DELETE", token }),
     reprocess: (token: string, id: number) =>
-      fetchApi<DocumentRecord>(`/documents/${id}/reprocess`, {
+      fetchApi<DocumentRecord>(`/api/documents/${id}/reprocess`, {
         method: "POST",
         token,
       }),
@@ -163,17 +163,16 @@ export const api = {
       question: string,
       conversationId?: number,
     ) => {
-      const url = `${getApiBase()}/chat/stream`;
+      const params = new URLSearchParams({ question });
+      if (conversationId) {
+        params.append("conversation_id", String(conversationId));
+      }
+      const url = `${getApiBase()}/api/chat/stream?${params.toString()}`;
       const response = await fetch(url, {
-        method: "POST",
+        method: "GET",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          question,
-          conversation_id: conversationId,
-        }),
       });
       if (!response.ok) {
         const data = await response
@@ -187,11 +186,11 @@ export const api = {
 
   conversations: {
     list: (token: string) =>
-      fetchApi<ConversationRecord[]>("/conversations", { token }),
+      fetchApi<ConversationRecord[]>("/api/conversations", { token }),
     get: (token: string, id: number) =>
-      fetchApi<ConversationDetail>(`/conversations/${id}`, { token }),
+      fetchApi<ConversationDetail>(`/api/conversations/${id}`, { token }),
     delete: (token: string, id: number) =>
-      fetchApi<null>(`/conversations/${id}`, { method: "DELETE", token }),
+      fetchApi<null>(`/api/conversations/${id}`, { method: "DELETE", token }),
   },
 
   users: {

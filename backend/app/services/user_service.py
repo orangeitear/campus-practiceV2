@@ -65,3 +65,20 @@ def update_user_status(db: Session, user_id: int, is_active: bool) -> User:
     db.commit()
     db.refresh(user)
     return user
+
+
+def update_user_role(db: Session, user_id: int, role: str) -> User:
+    user = get_user_by_id(db, user_id)
+    role = role.lower()
+    if role not in ("admin", "user"):
+        raise BizException(code=400, message="角色只能是 admin 或 user")
+    user.role = role
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def delete_user(db: Session, user_id: int) -> None:
+    user = get_user_by_id(db, user_id)
+    db.delete(user)
+    db.commit()

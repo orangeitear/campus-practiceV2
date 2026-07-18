@@ -38,7 +38,7 @@ export function KnowledgePage() {
     setLoading(true);
     try {
       const data = await api.documents.list(token);
-      setDocuments(data);
+      setDocuments(data.list || []);
     } catch {
       // ignore
     } finally {
@@ -217,7 +217,9 @@ export function KnowledgePage() {
                     ? "就绪"
                     : doc.status === "PROCESSING"
                       ? "处理中"
-                      : "错误"}
+                      : doc.status === "PENDING"
+                        ? "等待中"
+                        : "错误"}
                 </span>
               </div>
               <div className="doc-actions">

@@ -5,6 +5,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 from fastapi import UploadFile
 
+from app.core.database import SessionLocal
 from app.models.kb_document import KbDocument
 from app.schemas.document import DocumentListResponse
 from app.core.ai_client import ai_client
@@ -48,16 +49,16 @@ def save_file(file: UploadFile) -> str:
     return str(file_path)
 
 
-def create_document(db: Session, file: UploadFile, file_path: str) -> KbDocument:
+def create_document(db: Session, title: str, file: UploadFile, file_path: str) -> KbDocument:
     """保存文档记录"""
     ext = os.path.splitext(file.filename)[1].lower()
     doc = KbDocument(
-        title=file.filename,
+        title=title,
         file_name=file.filename,
         file_path=file_path,
         file_type=ext[1:],
         file_size=file.size,
-        status="待处理",
+        status="PENDING",
     )
     db.add(doc)
     db.commit()
@@ -65,31 +66,34 @@ def create_document(db: Session, file: UploadFile, file_path: str) -> KbDocument
     return doc
 
 
-async def process_document_async(doc_id: int, file_path: str, db: Session):
-    """异步处理文档：调用 AI 服务"""
+async def process_document_async(doc_id: int, file_path: str):
+    """异步处理文档：调用 AI 服务（自己管理 DB session）"""
+    db = SessionLocal()
     try:
-        # 更新状态为处理中
         doc = db.query(KbDocument).filter(KbDocument.id == doc_id).first()
         if doc:
-            doc.status = "处理中"
+            doc.status = "PROCESSING"
             db.commit()
 
         # 调用 AI 服务
         result = await ai_client.process_document(doc_id, file_path)
 
         # 更新状态为已完成
+        doc = db.query(KbDocument).filter(KbDocument.id == doc_id).first()
         if doc:
-            doc.status = "已完成"
+            doc.status = "READY"
             doc.chunk_count = result.get("chunk_count", 0)
             db.commit()
     except Exception as e:
         # 更新状态为处理失败
         doc = db.query(KbDocument).filter(KbDocument.id == doc_id).first()
         if doc:
-            doc.status = "处理失败"
+            doc.status = "ERROR"
             doc.error_message = str(e)
             db.commit()
         raise e
+    finally:
+        db.close()
 
 
 def get_document_list(
@@ -113,7 +117,7 @@ def get_document_list(
         "total": total,
         "page": page,
         "size": size,
-        "list": [DocumentListResponse.model_validate(item.__dict__) for item in items]
+        "list": [DocumentListResponse.model_validate(item) for item in items]
     }
 
 

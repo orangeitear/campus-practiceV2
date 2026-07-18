@@ -60,8 +60,8 @@ export function UsersPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const data = await request.get("/user/users") as UserItem[];
-      setUsers(data);
+      const data = await request.get("/user/users", { params: { page: 1, size: 100 } }) as { list: UserItem[]; total: number };
+      setUsers(data.list || []);
     } catch (err: unknown) {
       message.error(err instanceof Error ? err.message : "加载用户失败");
     } finally {
@@ -83,13 +83,13 @@ export function UsersPage() {
     currentPage * PAGE_SIZE,
   );
 
-  const adminCount = users.filter((user) => user.role === "ADMIN").length;
+  const adminCount = users.filter((user) => user.role.toLowerCase() === "admin").length;
   const activeCount = users.filter((user) => user.is_active).length;
 
   // ✅ 统一使用 request
   const toggleRole = async (user: UserItem) => {
     if (!token) return;
-    const newRole = user.role === "ADMIN" ? "USER" : "ADMIN";
+    const newRole = user.role.toLowerCase() === "admin" ? "user" : "admin";
     try {
       await request.patch(`/user/${user.id}/role`, { role: newRole });
       message.success("角色已更新");
@@ -184,7 +184,7 @@ export function UsersPage() {
       title: "角色",
       dataIndex: "role",
       render: (role: string) =>
-        role === "ADMIN" ? (
+        role.toLowerCase() === "admin" ? (
           <Tag color="blue">
             <Shield size={12} style={{ marginRight: 4 }} />
             管理员
@@ -228,14 +228,14 @@ export function UsersPage() {
             icon={<Pencil size={12} />}
             onClick={() => {
               setEditUser(record);
-              editForm.setFieldsValue({ role: record.role, email: record.email });
+              editForm.setFieldsValue({ role: record.role.toLowerCase(), email: record.email });
               setEditModal(true);
             }}
           >
             编辑
           </Button>
           <Button size="small" onClick={() => toggleRole(record)}>
-            {record.role === "ADMIN" ? "设为普通用户" : "设为管理员"}
+            {record.role.toLowerCase() === "admin" ? "设为普通用户" : "设为管理员"}
           </Button>
           <Button size="small" onClick={() => toggleActive(record)}>
             {record.is_active ? "停用" : "启用"}
@@ -358,8 +358,8 @@ export function UsersPage() {
           </Form.Item>
           <Form.Item name="role" label="角色" rules={[{ required: true }]}>
             <Select>
-              <Select.Option value="ADMIN">管理员</Select.Option>
-              <Select.Option value="USER">普通用户</Select.Option>
+              <Select.Option value="admin">管理员</Select.Option>
+              <Select.Option value="user">普通用户</Select.Option>
             </Select>
           </Form.Item>
           <Form.Item>

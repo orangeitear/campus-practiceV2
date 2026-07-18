@@ -1,5 +1,5 @@
 import traceback
-from fastapi import APIRouter, Depends, Query, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, Depends, Query, UploadFile, File, BackgroundTasks, Form
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -10,11 +10,12 @@ from app.schemas.common import success, error
 from app.schemas.document import DocumentListData, DocumentListResponse
 from app.services import document_service
 
-router = APIRouter(prefix="/api/doc", tags=["知识库管理"])
+router = APIRouter(prefix="/api/documents", tags=["知识库管理"])
 
 
-@router.post("/upload")
+@router.post("")
 async def upload_document(
+    title: str = Form(...),
     file: UploadFile = File(...),
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(get_db),
@@ -22,25 +23,24 @@ async def upload_document(
 ):
     """上传文档"""
     try:
-        print(f"=== 1. 收到文件: {file.filename}, 大小: {file.size} ===")
-        
+        print(f"=== 1. 收到文件: {file.filename}, 标题: {title}, 大小: {file.size} ===")
+
         # 保存文件
         file_path = document_service.save_file(file)
         print(f"=== 2. 文件保存路径: {file_path} ===")
-        
+
         # 创建文档记录
-        doc = document_service.create_document(db, file, file_path)
+        doc = document_service.create_document(db, title, file, file_path)
         print(f"=== 3. 文档记录创建: id={doc.id}, status={doc.status} ===")
-        
+
         # 异步触发 AI 处理
         background_tasks.add_task(
             document_service.process_document_async,
             doc.id,
             file_path,
-            db
         )
         print(f"=== 4. 异步任务已添加 ===")
-        
+
         return success(data={"id": doc.id, "status": doc.status}, message="上传成功，正在处理")
     except Exception as e:
         print(f"=== 上传异常 ===")
@@ -48,7 +48,7 @@ async def upload_document(
         raise
 
 
-@router.get("/list")
+@router.get("")
 async def get_document_list(
     keyword: str = Query(None, description="搜索关键词"),
     status: str = Query(None, description="状态筛选"),
@@ -89,7 +89,7 @@ async def reprocess_document(
     if not doc:
         return error(message="文档不存在", code=404)
 
-    doc.status = "待处理"
+    doc.status = "PENDING"
     doc.error_message = None
     db.commit()
 
@@ -97,6 +97,5 @@ async def reprocess_document(
         document_service.process_document_async,
         doc.id,
         doc.file_path,
-        db
     )
     return success(message="已启动重新处理")

@@ -27,3 +27,13 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UpdateStatusDTO(BaseModel):
+    """启用/禁用用户请求模型"""
+    is_active: bool = Field(..., description="是否启用")
+
+
+class UpdateRoleDTO(BaseModel):
+    """修改角色请求模型"""
+    role: str = Field(..., description="角色: admin 或 user")

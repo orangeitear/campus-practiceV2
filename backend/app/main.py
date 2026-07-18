@@ -16,6 +16,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.routers import conversation
 from app.routers import chat
+from app.routers import document
 
 
 
@@ -32,6 +33,7 @@ app.include_router(chat.router)
 
 # 注册路由
 app.include_router(user.router)
+app.include_router(document.router)
 # app.include_router(user.admin_router)
 # 配置 CORS 跨域
 app.add_middleware(
