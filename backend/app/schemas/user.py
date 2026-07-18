@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime  # 添加这行导入
+from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -17,16 +17,13 @@ class LoginDTO(BaseModel):
 
 
 class UserResponse(BaseModel):
-    """用户信息响应模型"""
+    """用户信息响应模型（不包含密码）"""
     id: int
     username: str
     email: Optional[str] = None
     role: str = "user"
     is_active: bool = True
-    created_at: datetime  # str → datetime
+    created_at: datetime  # ✅ 改为 datetime 类型
 
     class Config:
         from_attributes = True
-        json_encoders = {  # 添加这个配置，自动将 datetime 转为字符串
-            datetime: lambda v: v.isoformat()
-        }
