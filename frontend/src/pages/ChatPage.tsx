@@ -4,6 +4,7 @@ import {
   useEffect,
   useCallback,
   type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
 } from "react";
 import { useAuth } from "../context/auth-context";
 import {
@@ -12,7 +13,7 @@ import {
   type SourceRecord,
   type ConversationRecord,
 } from "../api";
-import { Modal, Button, message } from "antd";
+import { Modal, Button, Input, message } from "antd";
 import {
   Send,
   MessageSquare,
@@ -24,6 +25,9 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  Pencil,
+  Search,
+  X,
 } from "lucide-react";
 
 const CONV_PAGE_SIZE = 10;
@@ -39,6 +43,12 @@ export function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ConversationRecord | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // ========== 会话操作：重命名 / 右键菜单 / 搜索 ==========
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; conv: ConversationRecord } | null>(null);
+  const [convSearch, setConvSearch] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -60,11 +70,15 @@ export function ChatPage() {
   }, [loadConversations]);
 
   // 前端分页显示会话列表
-  const paginatedConversations = conversations.slice(
+  // 搜索过滤
+  const filteredConversations = conversations.filter((c) =>
+    c.title.toLowerCase().includes(convSearch.toLowerCase()),
+  );
+  const paginatedConversations = filteredConversations.slice(
     (convPage - 1) * CONV_PAGE_SIZE,
     convPage * CONV_PAGE_SIZE,
   );
-  const totalConvPages = Math.max(1, Math.ceil(convTotal / CONV_PAGE_SIZE));
+  const totalConvPages = Math.max(1, Math.ceil(filteredConversations.length / CONV_PAGE_SIZE));
 
   // ========== 自动滚动 ==========
   useEffect(() => {
@@ -230,6 +244,46 @@ export function ChatPage() {
     }
   };
 
+  // ========== 重命名 ==========
+  const startRename = (conv: ConversationRecord) => {
+    setRenamingId(conv.id);
+    setRenameValue(conv.title);
+  };
+  const submitRename = async () => {
+    if (!token || renamingId == null || !renameValue.trim()) {
+      setRenamingId(null);
+      return;
+    }
+    try {
+      // 尝试调用后端 rename API
+      await api.conversations.rename?.(token, renamingId, renameValue.trim());
+    } catch {
+      // 后端暂未实现时仅更新前端
+    }
+    setConversations((prev) =>
+      prev.map((c) => (c.id === renamingId ? { ...c, title: renameValue.trim() } : c)),
+    );
+    setRenamingId(null);
+  };
+
+  // ========== 右键菜单 ==========
+  const handleContextMenu = (e: ReactMouseEvent, conv: ConversationRecord) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, conv });
+  };
+  const closeContextMenu = () => setContextMenu(null);
+
+  // 格式化时间
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60_000) return "刚刚";
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`;
+    return d.toLocaleDateString("zh-CN");
+  };
+
   return (
     <div className="admin-page chat-page">
       <header className="page-heading">
@@ -243,7 +297,7 @@ export function ChatPage() {
 
       <div className="chat-layout">
         {/* 会话侧边栏 */}
-        <aside className="chat-sidebar">
+        <aside className="chat-sidebar" onClick={closeContextMenu}>
           <div className="sidebar-header">
             <button className="btn-new-chat" onClick={newChat}>
               <MessageSquare size={16} />
@@ -253,10 +307,23 @@ export function ChatPage() {
               <History size={14} /> 最近会话
             </span>
           </div>
+
+          {/* 搜索会话 */}
+          <div style={{ padding: "0 10px 8px" }}>
+            <Input
+              prefix={<Search size={14} />}
+              placeholder="搜索会话..."
+              value={convSearch}
+              onChange={(e) => { setConvSearch(e.target.value); setConvPage(1); }}
+              size="small"
+              allowClear
+            />
+          </div>
+
           <div className="conversation-list">
-            {conversations.length === 0 && (
+            {filteredConversations.length === 0 && (
               <div style={{ padding: "20px 12px", color: "#999", fontSize: 13, textAlign: "center" }}>
-                暂无历史会话
+                {convSearch ? "没有匹配的会话" : "暂无历史会话"}
               </div>
             )}
             {paginatedConversations.map((conv) => (
@@ -264,9 +331,29 @@ export function ChatPage() {
                 key={conv.id}
                 className={`conversation-item ${currentId === conv.id ? "active" : ""}`}
                 onClick={() => loadConversation(conv.id)}
+                onDoubleClick={() => startRename(conv)}
+                onContextMenu={(e) => handleContextMenu(e, conv)}
               >
                 <MessageSquare size={14} />
-                <span className="conv-title">{conv.title}</span>
+                <div className="conv-info" style={{ flex: 1, minWidth: 0 }}>
+                  {renamingId === conv.id ? (
+                    <Input
+                      size="small"
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={submitRename}
+                      onPressEnter={submitRename}
+                      autoFocus
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ fontSize: 12 }}
+                    />
+                  ) : (
+                    <>
+                      <span className="conv-title">{conv.title}</span>
+                      <span className="conv-time">{formatTime(conv.updated_at)}</span>
+                    </>
+                  )}
+                </div>
                 <button
                   className="btn-delete"
                   onClick={(e) => {
@@ -301,6 +388,45 @@ export function ChatPage() {
             </div>
           )}
         </aside>
+
+        {/* 右键菜单 */}
+        {contextMenu && (
+          <div
+            style={{
+              position: "fixed",
+              left: contextMenu.x,
+              top: contextMenu.y,
+              zIndex: 1000,
+              background: "white",
+              border: "1px solid #e0e0e0",
+              borderRadius: 6,
+              boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+              minWidth: 140,
+              padding: 4,
+            }}
+          >
+            <button
+              onClick={() => { startRename(contextMenu.conv); closeContextMenu(); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 8, width: "100%",
+                padding: "8px 12px", border: 0, background: "none", cursor: "pointer",
+                fontSize: 13, borderRadius: 4,
+              }}
+            >
+              <Pencil size={14} /> 重命名
+            </button>
+            <button
+              onClick={() => { setDeleteTarget(contextMenu.conv); closeContextMenu(); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 8, width: "100%",
+                padding: "8px 12px", border: 0, background: "none", cursor: "pointer",
+                fontSize: 13, color: "#d93025", borderRadius: 4,
+              }}
+            >
+              <Trash2 size={14} /> 删除
+            </button>
+          </div>
+        )}
 
         {/* 聊天主区域 */}
         <main className="chat-main">
@@ -360,9 +486,14 @@ export function ChatPage() {
             {/* 加载指示器 */}
             {loading && (
               <div className="message assistant">
-                <div className="message-bubble">
+                <div className="message-avatar">
                   <Loader size={16} className="spin" />
-                  <span style={{ marginLeft: 8 }}>AI 正在思考...</span>
+                </div>
+                <div className="message-bubble">
+                  <span style={{ color: "var(--c-text-3)", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                    <Loader size={14} className="spin" />
+                    AI 正在思考...
+                  </span>
                 </div>
               </div>
             )}

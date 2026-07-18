@@ -16,16 +16,13 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 }
 
 /**
- * 游客守卫 — 已登录用户重定向
- * - admin → /admin（管理后台）
- * - user/guest → /（公开首页）
+ * 游客守卫 — 已登录用户重定向到工作台
  */
 export function GuestGuard({ children }: { children: ReactNode }) {
-  const { token, isAdmin } = useAuth();
+  const { token } = useAuth();
 
   if (token) {
-    const target = isAdmin() ? "/admin" : "/";
-    return <Navigate to={target} replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   return <>{children}</>;
@@ -34,7 +31,7 @@ export function GuestGuard({ children }: { children: ReactNode }) {
 /**
  * 管理员守卫 — 仅 admin 角色可访问
  * - 无 token → /login
- * - 非 admin → /（公开首页）并提示无权限
+ * - 非 admin → /admin（工作台）并提示无权限
  */
 export function AdminGuard({ children }: { children: ReactNode }) {
   const { token, isAdmin } = useAuth();
@@ -45,11 +42,8 @@ export function AdminGuard({ children }: { children: ReactNode }) {
   }
 
   if (!isAdmin()) {
-    // 防止在初始加载时重复弹 toast
-    if (location.pathname !== "/") {
-      message.warning("您没有访问管理后台的权限");
-    }
-    return <Navigate to="/" replace />;
+    message.warning("您没有访问该模块的权限");
+    return <Navigate to="/admin" replace />;
   }
 
   return <>{children}</>;

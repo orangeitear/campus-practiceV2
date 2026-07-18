@@ -6,6 +6,7 @@ import {
   BookOpen,
   Users,
   LogOut,
+  LogIn,
   Menu,
   X,
   Waves,
@@ -28,9 +29,11 @@ export function AdminLayout() {
 
   const navItems = [
     { key: "chat" as PageKey, label: "问答", longLabel: "问答工作台", icon: MessageSquare, path: "/admin" },
-    { key: "knowledge" as PageKey, label: "知识库", longLabel: "知识库管理", icon: BookOpen, path: "/admin/knowledge" },
     ...(isAdmin()
-      ? [{ key: "users" as PageKey, label: "用户", longLabel: "用户与权限", icon: Users, path: "/admin/users" }]
+      ? [
+          { key: "knowledge" as PageKey, label: "知识库", longLabel: "知识库管理", icon: BookOpen, path: "/admin/knowledge" },
+          { key: "users" as PageKey, label: "用户", longLabel: "用户与权限", icon: Users, path: "/admin/users" },
+        ]
       : []),
   ];
 
@@ -39,10 +42,9 @@ export function AdminLayout() {
     navigate("/login");
   }, [logout, navigate]);
 
-  if (!token) {
-    navigate("/login", { replace: true });
-    return null;
-  }
+  const handleLogin = useCallback(() => {
+    navigate("/login");
+  }, [navigate]);
 
   return (
     <div className="admin-shell">
@@ -67,14 +69,23 @@ export function AdminLayout() {
             <i />
             知识服务运行中
           </span>
-          <div className="user-meta">
-            <strong>{user?.username}</strong>
-            <span>{isAdmin() ? "系统管理员" : "校园用户"}</span>
-          </div>
-          <button className="logout-btn" onClick={handleLogout}>
-            <LogOut size={17} />
-            <span>退出</span>
-          </button>
+          {token ? (
+            <>
+              <div className="user-meta">
+                <strong>{user?.username}</strong>
+                <span>{isAdmin() ? "系统管理员" : "校园用户"}</span>
+              </div>
+              <button className="logout-btn" onClick={handleLogout}>
+                <LogOut size={17} />
+                <span>退出</span>
+              </button>
+            </>
+          ) : (
+            <button className="login-btn" onClick={handleLogin}>
+              <LogIn size={17} />
+              <span>登录</span>
+            </button>
+          )}
         </div>
       </header>
 

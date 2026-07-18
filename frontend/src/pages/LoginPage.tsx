@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "用户名不能为空"),
+  username: z.string().min(1, "请输入用户名或邮箱"),
   password: z.string().min(1, "密码不能为空"),
   remember: z.boolean().optional(),
 });
@@ -63,8 +63,7 @@ export function LoginPage() {
       }
       // 延迟跳转，确保 React Context 状态已更新
       setTimeout(() => {
-        const target = res.user.role === "admin" ? "/admin" : "/";
-        navigate(target, { replace: true });
+        navigate("/admin", { replace: true });
       }, 100);
     } catch (err: unknown) {
       message.error(err instanceof Error ? err.message : "登录失败");
@@ -123,13 +122,13 @@ export function LoginPage() {
           </div>
           <Form onFinish={handleSubmit(onSubmit)} layout="vertical" style={{ marginTop: 24 }}>
             <Form.Item
-              label="用户名"
+              label="用户名或邮箱"
               validateStatus={errors.username ? "error" : ""}
               help={errors.username?.message}
             >
               <Input
                 prefix={<User size={16} />}
-                placeholder="请输入用户名"
+                placeholder="请输入用户名或邮箱"
                 {...register("username")}
                 onChange={(e) => setValue("username", e.target.value, { shouldValidate: true })}
               />

@@ -34,13 +34,13 @@ const ROLE_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "全部角色" },
   { value: "admin", label: "管理员" },
   { value: "user", label: "普通用户" },
-  { value: "guest", label: "游客" },
+  { value: "guest", label: "访客" },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "管理员",
   user: "普通用户",
-  guest: "游客",
+  guest: "访客",
 };
 
 export function UsersPage() {
@@ -141,18 +141,6 @@ export function UsersPage() {
     loadStats();
   };
 
-  const toggleRole = async (user: UserItem) => {
-    if (!token) return;
-    const newRole = user.role === "admin" ? "user" : "admin";
-    try {
-      await request.patch(`/user/${user.id}/role`, { role: newRole });
-      message.success(`已将 ${user.username} 设为${ROLE_LABELS[newRole]}`);
-      refreshAfterAction();
-    } catch (err: unknown) {
-      message.error(err instanceof Error ? err.message : "角色更新失败");
-    }
-  };
-
   const toggleActive = async (user: UserItem) => {
     if (!token) return;
     try {
@@ -207,6 +195,7 @@ export function UsersPage() {
     username: string;
     email: string;
     password: string;
+    role: string;
   }) => {
     if (!token) return;
     setModalLoading(true);
@@ -306,12 +295,6 @@ export function UsersPage() {
             }}
           >
             编辑
-          </Button>
-          <Button
-            size="small"
-            onClick={() => toggleRole(record)}
-          >
-            {record.role === "admin" ? "设为普通用户" : "设为管理员"}
           </Button>
           <Button
             size="small"
@@ -465,7 +448,7 @@ export function UsersPage() {
             <Select>
               <Select.Option value="admin">管理员</Select.Option>
               <Select.Option value="user">普通用户</Select.Option>
-              <Select.Option value="guest">游客</Select.Option>
+              <Select.Option value="guest">访客</Select.Option>
             </Select>
           </Form.Item>
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
@@ -532,6 +515,18 @@ export function UsersPage() {
             ]}
           >
             <Input.Password placeholder="至少6位字符" />
+          </Form.Item>
+          <Form.Item
+            name="role"
+            label="角色"
+            rules={[{ required: true, message: "请选择角色" }]}
+            initialValue="user"
+          >
+            <Select placeholder="请选择角色">
+              <Select.Option value="admin">管理员</Select.Option>
+              <Select.Option value="user">普通用户</Select.Option>
+              <Select.Option value="guest">访客</Select.Option>
+            </Select>
           </Form.Item>
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Button
