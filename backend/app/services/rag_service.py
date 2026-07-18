@@ -9,8 +9,6 @@ RAG 服务编排模块
 import asyncio
 from typing import List, Dict, Any, Optional, AsyncGenerator
 
-from app.core.llm_client import llm_client
-from app.core.prompt import build_chat_messages
 from app.core.exceptions import BizException
 from app.ai.processor import document_processor
 from app.ai.vector_store import vector_store
@@ -40,6 +38,24 @@ class RAGService:
         self.top_k = top_k
         self.similarity_threshold = similarity_threshold
         self.temperature = temperature
+        self._llm_client = None
+        self._prompt_builder = None
+    
+    @property
+    def llm_client(self):
+        """延迟加载 llm_client（等待王嘉欣完成）"""
+        if self._llm_client is None:
+            from app.core.llm_client import llm_client
+            self._llm_client = llm_client
+        return self._llm_client
+    
+    @property
+    def prompt_builder(self):
+        """延迟加载 prompt_builder（等待王嘉欣完成）"""
+        if self._prompt_builder is None:
+            from app.core.prompt import build_chat_messages
+            self._prompt_builder = build_chat_messages
+        return self._prompt_builder
     
     # ============ 内部检索方法 ============
     
@@ -228,10 +244,7 @@ class RAGService:
                 "retrieved_count": 0,
             }
         
-        # 3. 构建 Prompt（使用王嘉欣的 prompt.py）
-        # 注意：prompt.py 中的 chunks 需要包含 title 字段，
-        # 但我们的 chunks 只有 content, doc_id, chunk_idx
-        # 所以需要补充 title（这里暂时用 doc_id 代替）
+        # 3. 构建 Prompt（使用延迟加载的 prompt_builder）
         chunks_with_title = []
         for chunk in retrieved:
             chunks_with_title.append({
@@ -242,10 +255,10 @@ class RAGService:
                 "score": chunk["score"],
             })
         
-        messages = build_chat_messages(question, chunks_with_title)
+        messages = self.prompt_builder(question, chunks_with_title)
         
-        # 4. 调用 LLM 生成答案（使用王嘉欣的 llm_client）
-        answer = await llm_client.chat(
+        # 4. 调用 LLM 生成答案（使用延迟加载的 llm_client）
+        answer = await self.llm_client.chat(
             messages=messages,
             temperature=self.temperature
         )
@@ -311,11 +324,11 @@ class RAGService:
                 "score": chunk["score"],
             })
         
-        messages = build_chat_messages(question, chunks_with_title)
+        messages = self.prompt_builder(question, chunks_with_title)
         
-        # 4. 流式生成（使用王嘉欣的 llm_client）
+        # 4. 流式生成（使用延迟加载的 llm_client）
         answer_parts = []
-        async for token in llm_client.chat_stream(
+        async for token in self.llm_client.chat_stream(
             messages=messages,
             temperature=self.temperature
         ):
